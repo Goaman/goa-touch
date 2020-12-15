@@ -1,0 +1,305 @@
+manifest_version: 1
+
+intention:
+  - name: copy
+    context: ['window', 'foo']
+    run: 'foo'
+
+# "@fn1" = "KEY_3"
+# "@fn2" = "KEY_2"
+#" @fn1" = "KEY_1"
+# mod_4 = "KEY_4"
+
+layouts:
+  linux_event_map:
+    keymap:
+      # special remap for my keytronic keyboard because F keys does not trigger on
+      # my linux installation.
+      - [['KEY_BRIGHTNESSDOWN'], ["@F1"]]
+      - [['KEY_BRIGHTNESSUP'], ["@F2"]]
+      - [['KEY_SCALE'], ["@F3"]]
+      - [['KEY_DASHBOARD'], ["@F4"]]
+      - [['KEY_KBDILLUMDOWN'], ["@F5"]]
+      - [['KEY_KBDILLUMUP'], ["@F6"]]
+      - [['KEY_PREVIOUSSONG'], ['@F7']]
+      - [['KEY_PLAYPAUSE'], ['@F8']]
+      - [['KEY_NEXTSONG'], ['@F9']]
+      - [['KEY_MUTE'], ['@F9']]
+      - [['KEY_VOLUMEDOWN'], ['@F11']]
+      - [['KEY_VOLUMEUP'], ['@F12']]
+
+      - [['KEY_F1'], ["@F1"]]
+      - [['KEY_F2'], ["@F2"]]
+      - [['KEY_F3'], ["@F3"]]
+      - [['KEY_F4'], ["@F4"]]
+      - [['KEY_F5'], ["@F5"]]
+      - [['KEY_F6'], ["@F6"]]
+      - [['KEY_F7'], ['@F7']]
+      - [['KEY_F8'], ['@F8']]
+      - [['KEY_F9'], ['@F9']]
+      - [['KEY_F9'], ['@F9']]
+      - [['KEY_F11'], ['@F11']]
+      - [['KEY_F12'], ['@F12']]
+      - [['KEY_INSERT'], ['@F13']]
+      - [['KEY_DELETE'], ['@F14']]
+
+      - [['KEY_GRAVE'], ["@M0"]]
+      - [['KEY_1'], ["@M1"]]
+      - [['KEY_2'], ["@M2"]]
+      - [['KEY_3'], ["@M3"]]
+      - [['KEY_4'], ["@M4"]]
+      - [['KEY_5'], ["@M5"]]
+      - [['KEY_6'], ["@M6"]]
+      - [['KEY_7'], ["@M7"]]
+      - [['KEY_8'], ["@M8"]]
+      - [['KEY_9'], ["@M9"]]
+      - [['KEY_0'], ["@M0"]]
+
+      # Left set
+      - [['KEY_Q'], ["@L11"]]
+      - [['KEY_W'], ["@L12"]]
+      - [['KEY_E'], ["@L13"]]
+      - [['KEY_R'], ["@L14"]]
+      - [['KEY_T'], ["@L15"]]
+
+      - [['KEY_A'], ["@L21"]]
+      - [['KEY_S'], ["@L22"]]
+      - [['KEY_D'], ["@L23"]]
+      - [['KEY_F'], ["@L24"]]
+      - [['KEY_G'], ["@L25"]]
+
+      - [['KEY_Z'], ["@L31"]]
+      - [['KEY_X'], ["@L32"]]
+      - [['KEY_C'], ["@L33"]]
+      - [['KEY_V'], ["@L34"]]
+      - [['KEY_B'], ["@L35"]]
+
+      # Right set
+      - [['KEY_Y'], ["@R11"]]
+      - [['KEY_U'], ["@R12"]]
+      - [['KEY_I'], ["@R13"]]
+      - [['KEY_O'], ["@R14"]]
+      - [['KEY_P'], ["@R15"]]
+
+      - [['KEY_H'], ["@R21"]]
+      - [['KEY_J'], ["@R22"]]
+      - [['KEY_K'], ["@R23"]]
+      - [['KEY_L'], ["@R24"]]
+      - [['KEY_SEMICOLON'], ["@R25"]]
+
+      - [['KEY_N'], ["@R31"]]
+      - [['KEY_M'], ["@R32"]]
+      - [['KEY_COMMA'], ["@R33"]]
+      - [['KEY_DOT'], ["@R34"]]
+      - [['KEY_SLASH'], ["@R35"]]
+
+      # X set
+      - [['KEY_TAB'], ["@X1"]]
+
+      - [['KEY_CAPSLOCK'], ["@X2"]]
+
+      - [['KEY_LEFTSHIFT'], ["@X31"]]
+      - [['KEY_102ND'], ["@X32"]]
+
+      - [['KEY_LEFTCTRL'], ["@X32"]]
+      - [['KEY_LEFTMETA'], ["@X32"]]
+      - [['KEY_LEFTALT'], ["@X32"]]
+
+      # Space Set
+      - [['KEY_SPACE'], ["@S"]]
+
+      # Y Set
+      - [['KEY_RIGHTALT'], ["@Y1"]]
+      - [['KEY_COMPOSE'], ["@Y2"]]
+      - [['KEY_RIGHTCTRL'], ["@Y3"]]
+
+      # Y Set
+      - [['KEY_UP'], ["@NU"]]
+      - [['KEY_LEFT'], ["@NL"]]
+      - [['KEY_DOWN'], ["@ND"]]
+      - [['KEY_RIGHT'], ["@NR"]]
+
+      # O Set
+      - [['KEY_MINUS'], ["@O01"]]
+      - [['KEY_EQUAL'], ["@O02"]]
+      - [['KEY_BACKSPACE'], ["@O03"]]
+      - [['KEY_PAGEUP'], ["@O04"]]
+
+      - [['KEY_LEFTBRACE'], ["@O11"]]
+      - [['KEY_RIGHTBRACE'], ["@O12"]]
+      - [['KEY_BACKSLASH'], ["@O13"]]
+      - [['KEY_PAGEDOWN'], ["@O14"]]
+
+      - [['KEY_APOSTROPHE'], ["@O21"]]
+      - [['KEY_ENTER'], ["@O22"]]
+      - [['KEY_HOME'], ["@O24"]]
+
+      - [['KEY_RIGHTSHIFT'], ["@O31"]]
+      - [['KEY_END'], ["@O34"]]
+  main:
+    compile:
+      - linux_event_map
+      - fkeys
+    keymap:
+      # - [["@M1"], ["doubleswitch:edit_mode"]]
+
+      - [["@M0"], ["KEY_LEFTCTRL"]]
+      - [["@M2"], ["KEY_LEFTSHIFT"]]
+
+      - [["@X1"], ["KEY_LEFTMETA"]]
+
+      - [["@X2", "@R21"], ["togglePowermode[]"]]
+      - [["@X2", "@R25"], ["KEY_CAPSLOCK"]]
+
+      - [["KEY_MENU"], ["ALTGR"]]
+
+      - [["@O21"], ["KEY_RIGHTSHIFT"]]
+
+      - [['@M1'], ["#edit_mode"]]
+      - [['@M3'], ["#navigation_and_general_mode_right"]]
+      - - - '@M4'
+        - - "@keyboard_language_layout"
+          - "@special_char"
+
+      # - [["@fn1", "KEY_EQUAL"], ['!reload-config']]
+  fkeys:
+    keymap:
+      - [["@F1"], ['KEY_F1']]
+      - [["@F2"], ['KEY_F2']]
+      - [["@F3"], ['KEY_F3']]
+      - [["@F4"], ['KEY_F4']]
+      - [["@F5"], ['KEY_F5']]
+      - [["@F6"], ['KEY_F6']]
+      - [['@F7'], ['KEY_F7']]
+      - [['@F8'], ['KEY_F8']]
+      - [['@F9'], ['KEY_F9']]
+      - [['@F9'], ['KEY_F9']]
+      - [['@F11'], ['KEY_F11']]
+      - [['@F12'], ['KEY_F12']]
+      - [['@F13'], ['KEY_INSERT']]
+      - [['@F14'], ['KEY_DELETE']]
+  edit_mode:
+    keymap:
+      - [["KEY_E"], [">xdotool key --delay 0 ctrl+c"]]
+      - [["KEY_R"], [">xdotool key --delay 0 ctrl+v"]]
+      - [["KEY_G"], [">xdotool key --delay 0 ctrl+g"]]
+      - [["KEY_D"], [">xdotool key --delay 0 ctrl+z"]]
+      - [["KEY_F"], [">xdotool key --delay 0 ctrl+y"]]
+      - [["KEY_S"], [">xdotool key --delay 0 ctrl+s"]]
+      - [["KEY_T"], [">xdotool key --delay 0 BackSpace"]]
+
+  navigation_and_general_mode_right:
+    keymap:
+      - [["@R13"], ["KEY_PAGEDOWN"]]
+      - [["@R14"], ["KEY_PAGEUP"]]
+      - [["@R12"], ["KEY_HOME"]]
+      - [["@R15"], ["KEY_END"]]
+
+      - [["@R24"], ["KEY_UP"]]
+      - [["@R23"], ["KEY_DOWN"]]
+      - [["@R22"], ["KEY_LEFT"]]
+      - [["@R25"], ["KEY_RIGHT"]]
+
+      - [["@R31"], ["KEY_ESC"]]
+      - [["@R32"], ["KEY_BACKSPACE"]]
+      - [["@R33"], ["KEY_ENTER"]]
+
+  general:
+    keymap:
+      - [["KEY_F2"], ["> xdotool keydown alt; xdotool key Tab; sleep 0.1; xdotool keyup alt"]]
+
+  numpad:
+    keymap:
+      - [["@32"], ["KEY_1"]]
+      - [["@33"], ["KEY_2"]]
+      - [["@34"], ["KEY_3"]]
+      - [["@22"], ["KEY_4"]]
+      - [["@23"], ["KEY_5"]]
+      - [["@24"], ["KEY_6"]]
+      - [["@32"], ["KEY_7"]]
+      - [["@33"], ["KEY_8"]]
+      - [["@34"], ["KEY_9"]]
+      - [["@O21"], ["KEY_0"]]
+
+  app:
+    keymap:
+      - [["@L11"], [">su goaman -m -c 'google-chrome &'"]] #
+      - [["@L12"], [">su goaman -c 'firefox &'"]] #
+      - [["@L13"], [">su -m goaman -c 'code -n --disable-gpu /home/goaman &'"]] #
+
+      - [["@L21"], [">su goaman -m -c '/home/odoo/app/blender-2.80/  &'"]] #
+      - [["@L23"], [">su goaman -m -c '/usr/bin/inkscape &'"]] #
+      - [["@R14"], [">su goaman -c '/usr/bin/obs &'"]] #
+
+      - [["@R12"], [">su goaman -c 'spotify &'"]] #
+
+      - [["@L25"], [">su goaman -c '/snap/bin/discord &'"]] #
+
+  app_util:
+    keymap:
+      - [["KEY_SYSRQ"], ['>gnome-screenshot -f ~/captures/$(date +%s).png']]
+
+      - [["@O12"], [">su goaman -m -c 'flameshot gui -p /home/goaman/captures'"]]
+
+      - [["KEY_Y"], [">su goaman -c 'slock &'"]] #
+      - [["KEY_P"], [">su goaman -c 'xkill &'"]] #
+
+      - [["@M3", "@O11"], [">sudo -u goaman -E -b gpick -p"]]
+
+      # need to be with a left modifier
+      - [["@L T"], [">su goaman -m -c '/usr/bin/copyq toggle &'"]] #
+
+  screen:
+    keymap:
+      - [['KEY_M'], [">su goaman -c '/home/goaman/goamanc/bin/xrandoff &'"]] #
+      - [['KEY_COMMA'], [">su goaman -c '/home/goaman/goamanc/bin/xrandon &'"]] #
+      - [['KEY_DOT'], [">su goaman -c '/home/goaman/goamanc/bin/xrand_screen2 &'"]] #
+
+  keyboard_language_layout:
+    # previously KEY_4
+    keymap:
+      - [["KEY_M"], ['>setxkbmap us dvorak-intl']]
+      - [["KEY_COMMA"], ['>setxkbmap us']]
+      - [["KEY_DOT"], ['>setxkbmap be']]
+      - [["KEY_P"], [">su goaman -m -c 'killall trayer;trayer'"]] #
+
+  quotes:
+    keymap:
+      - [["@fn1", "KEY_N"], [">xdotool key quoteright"]]
+      - [["@fn1", "KEY_SLASH"], [">xdotool key quotedbl"]]
+      - [["@fn1", "KEY_H"], [">xdotool key asciitilde"]]
+
+  char_key:
+    keymap:
+      - [["@O11", "KEY_S "], ["KEY_APOSTROPHE"]]
+      - [["@O11", "KEY_A"], ["KEY_LEFTBRACE"]]
+      - [["@O11", "KEY_D"], ["KEY_RIGHTBRACE"]]
+
+  mouse:
+    # scroll
+    # click
+    # move mouse
+    # - quick
+    # - midlle
+    # - slow
+
+  special_char:
+    keymap:
+      - [[mod_4, "KEY_J"], [">xdotool key U25B6"]] #insert char "▶"
+      - [[mod_4, "KEY_K"], [">xdotool key U25C6"]] #insert char "◆"
+      - [[mod_4, "KEY_L"], [">xdotool key U25C0"]] #insert char "◀"
+      - [[mod_4, "KEY_N"], [">xdotool key U60"]] # insert char "`"
+
+    # - [["@fn1", "KEY_SEMICOLON"], ["KEY_EQUAL"]]
+    # - [["@fn1", "KEY_DOT"], ["KEY_Q"]]
+    # - [["@fn1", "KEY_M"], ["KEY_W"]]
+    # - [["@fn1", "KEY_COMMA"], ["KEY_E"]]
+
+keyboards:
+
+  - name: Keychron Keychron K2
+    layout: main
+
+  # - name: Razer Razer Blade Keyboard
+  #   layout: main
+

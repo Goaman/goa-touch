@@ -6,7 +6,7 @@
     "module": "commonjs",
     "sourceMap": true,
     "noImplicitAny": true,
-    "sourceRoot": "src",
-    "outDir": "build",
+    "sourceRoot": "../src/",
+    "outDir": "./build/",
   },
 }
