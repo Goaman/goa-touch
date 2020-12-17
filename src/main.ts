@@ -3,14 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { constants, Device, eventTypes, UInput, NevEvent } from 'nevdev';
 import { exec } from 'child_process';
-// const writeFunction = nevdev.createDevice();
-// console.log('writeFunction:', writeFunction);
+
 const configFilePath = path.resolve(__dirname, '..', 'config', 'main.yaml');
 
 interface KeyboardConfig {
   name: string;
   layout: string;
-  keymap: string;
 }
 
 type Keymap = [string[], string[]][];
@@ -135,140 +133,211 @@ const remapToRelease: Record<number, Set<number>> = {};
 
 const defaultDeviceName = 'GoaTouch virtual device';
 
-(async () => {
-  const config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
-  const devices = await Device.all();
-  const uinput = new UInput(defaultDeviceName);
+class Remapper {
+  config: Config;
+  uinput: UInput;
+  loadedDevices: Device[] = [];
+  allDevices: Device[];
 
-  for (const device of devices) {
-    const keyboardConfig = getKeyboard(config, device.name);
-    if (!keyboardConfig) continue;
+  async start() {
+    this.config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
+    this.uinput = new UInput(defaultDeviceName);
+    await this.loadDevices();
+    await this.bind();
+    this.listenConfigChange();
+  }
+  async getDevicesInConfig() {
+    return this.allDevices.filter((d) => !!getKeyboard(this.config, d.name));
+  }
+  async loadDevices() {
+    this.allDevices = await Device.all();
+  }
+  async bind() {
+    for (const device of this.allDevices) {
+      const keyboardConfig = getKeyboard(this.config, device.name);
+      if (!keyboardConfig) continue;
 
-    console.log('Remapping device:', device.name);
+      console.log('Remapping device:', device.name);
+      console.log('Main layer:', keyboardConfig.layout);
+      this.loadedDevices.push(device);
+      const layout = getLayout(this.config, keyboardConfig.layout);
+      if (!layout) {
+        throw new Error(
+          `Layout ${keyboardConfig.layout} does not exits.\nCreate an entry or use another layout in you config.yaml`,
+        );
+      }
 
-    const layout = getLayout(config, keyboardConfig.layout);
-    if (!layout) {
-      throw new Error(
-        `Layout ${keyboardConfig.layout} does not exits.\nCreate an entry or use another layout in you config.yaml`,
-      );
-    }
-    device.listen();
-    device.grab();
+      device.listen();
+      device.grab();
 
-    const getActiveLayer = () => {
-      const activeLayers = Object.entries(layerState)
-        .map(([layerName, state]) => layerName && state && layerName)
-        .filter((layerName) => !!layerName);
-      return [keyboardConfig.layout, ...activeLayers];
-    };
-    let compiledKeymap = compileKeymap(config, getActiveLayer());
+      const getActiveLayer = () => {
+        const activeLayers = Object.entries(layerState)
+          .map(([layerName, state]) => layerName && state && layerName)
+          .filter((layerName) => !!layerName);
+        return [keyboardConfig.layout, ...activeLayers];
+      };
+      let compiledKeymap = compileKeymap(this.config, getActiveLayer());
+      let skipNextSync = false;
 
-    device.on('event', (event) => {
-      const type = eventTypes[event.type];
-      const linuxKeyNames = type.events[event.code];
-      if (type.name === 'EV_KEY') {
-        const keyNames = new Set<string>();
-        const currentKeymaps: SimpleKeymap[] = [];
+      device.onEvent((event) => {
+        const type = eventTypes[event.type];
+        const linuxKeyNames = type.events[event.code];
+        if (type.name === 'EV_KEY') {
+          const keyNames = new Set<string>();
+          const currentKeymaps: SimpleKeymap[] = [];
 
-        const visitedKeys = new Set<string>();
-        const visitStack = [...linuxKeyNames];
-        let currentKey: string;
-        while ((currentKey = visitStack.shift())) {
-          keyNames.add(currentKey);
-          visitedKeys.add(currentKey);
-          const keyDefinition = compiledKeymap[currentKey];
-          if (!keyDefinition) continue;
-          for (const alias of keyDefinition.aliases) {
-            if (!visitedKeys.has(alias)) {
-              visitStack.push(alias);
-            }
-          }
-          currentKeymaps.push(...keyDefinition.keymaps);
-        }
-
-        for (const keyName of keyNames) {
-          keyStates[keyName] = !!event.value;
-        }
-
-        if (event.value !== KeyChangeState.REPEAT) {
-          console.log('---');
-          for (const [key, state] of Object.entries(keyStates)) {
-            if (state) console.log(`key ${key}`, true);
-          }
-        }
-
-        let commandFound = false;
-        if (event.value === KeyChangeState.RELEASE) {
-          const releaseCodes = remapToRelease[event.code];
-          if (releaseCodes) {
-            console.log('releaseCodes:', releaseCodes);
-            for (const code of releaseCodes) {
-              const nevEvent: NevEvent = {
-                type: constants.EV_KEY,
-                code: code,
-                value: KeyChangeState.RELEASE,
-              };
-              const keyNames = eventTypes[constants.EV_KEY].events[code];
-              console.log('send reselease for key', keyNames);
-              uinput.write(nevEvent);
-              uinput.sync();
-            }
-          }
-          remapToRelease[event.code] = undefined;
-        }
-        for (const keymap of currentKeymaps) {
-          if (keymap.commands.length) {
-            const allModifiersPressed = keymap.modifiers.every((m) => keyStates[m]);
-            for (const command of keymap.commands) {
-              // check if command is coniere as a key remapping
-              if (event.value !== KeyChangeState.REPEAT) {
-                console.log('command:', command);
+          const visitedKeys = new Set<string>();
+          const visitStack = [...linuxKeyNames];
+          let currentKey: string;
+          while ((currentKey = visitStack.shift())) {
+            keyNames.add(currentKey);
+            visitedKeys.add(currentKey);
+            const keyDefinition = compiledKeymap[currentKey];
+            if (!keyDefinition) continue;
+            for (const alias of keyDefinition.aliases) {
+              if (!visitedKeys.has(alias)) {
+                visitStack.push(alias);
               }
-              let match: RegExpMatchArray;
-              if (allModifiersPressed && command.match(/^\s*\w+\s*$/)) {
-                //if (event.value === KeyChangeState.REPEAT) continue;
-                commandFound = true;
-                const key = command.trim();
-                console.log('changing command to ', key);
-                const remappedCode = constants[command.trim().toUpperCase()];
-                const nevEvent = {
-                  type: constants['EV_KEY'],
-                  code: remappedCode,
-                  value: !allModifiersPressed ? 0 : event.value,
+            }
+            currentKeymaps.push(...keyDefinition.keymaps);
+          }
+
+          for (const keyName of keyNames) {
+            keyStates[keyName] = !!event.value;
+          }
+
+          if (event.value !== KeyChangeState.REPEAT) {
+            console.log('---');
+            for (const [key, state] of Object.entries(keyStates)) {
+              if (state) console.log(`key ${key}`, true);
+            }
+          }
+
+          let commandFound = false;
+          if (event.value === KeyChangeState.RELEASE) {
+            const releaseCodes = remapToRelease[event.code];
+            if (releaseCodes) {
+              for (const code of releaseCodes) {
+                const nevEvent: NevEvent = {
+                  type: constants.EV_KEY,
+                  code: code,
+                  value: KeyChangeState.RELEASE,
                 };
-                remapToRelease[event.code] = remapToRelease[event.code] || new Set();
-                remapToRelease[event.code].add(remappedCode);
-                uinput.write(nevEvent);
-                uinput.sync();
-                // check if we want to run a shell command
-              } else if (
-                (match = command.match(/^\s*>(.*)/)) &&
-                (event.value === KeyChangeState.PRESS || event.value === KeyChangeState.REPEAT) &&
-                allModifiersPressed
-              ) {
-                commandFound = true;
-                const shellCommand = match[1];
-                console.log('calling a sub process:');
-                console.log(shellCommand);
-                exec(shellCommand, { uid: execUID, gid: execGID });
-
-                // check if we want to activate/deactivate a layer
-              } else if ((match = command.match(/^\s*#(.*)/))) {
-                commandFound = true;
-                if (event.value === KeyChangeState.REPEAT) continue;
-                const layerName = match[1].trim();
-                layerState[layerName] = !!event.value && allModifiersPressed;
-                compiledKeymap = compileKeymap(config, getActiveLayer());
+                this.uinput.write(nevEvent);
+                this.uinput.sync();
               }
             }
-            break;
+            remapToRelease[event.code] = undefined;
           }
+          for (const keymap of currentKeymaps) {
+            if (keymap.commands.length) {
+              const allModifiersPressed = keymap.modifiers.every((m) => keyStates[m]);
+              for (const command of keymap.commands) {
+                // check if command is coniere as a key remapping
+                if (event.value !== KeyChangeState.REPEAT) {
+                  console.log('command:', command);
+                }
+                let match: RegExpMatchArray;
+                // Check if we remap the key
+                if (allModifiersPressed && command.match(/^\s*\w+\s*$/)) {
+                  commandFound = true;
+                  const key = command.trim();
+                  // const keyName = eventTypes
+                  console.log('Remap key to ', key);
+                  const remappedCode = constants[command.trim().toUpperCase()];
+                  const nevEvent = {
+                    type: constants['EV_KEY'],
+                    code: remappedCode,
+                    value: !allModifiersPressed ? 0 : event.value,
+                  };
+                  remapToRelease[event.code] = remapToRelease[event.code] || new Set();
+                  remapToRelease[event.code].add(remappedCode);
+                  this.uinput.write(nevEvent);
+                  this.uinput.sync();
+
+                  // check if we want to run a shell command
+                } else if (
+                  (match = command.match(/^\s*>(.*)/)) &&
+                  (event.value === KeyChangeState.PRESS || event.value === KeyChangeState.REPEAT) &&
+                  allModifiersPressed
+                ) {
+                  commandFound = true;
+                  const shellCommand = match[1];
+                  exec(shellCommand, { uid: execUID, gid: execGID });
+
+                  // check if we want to activate/deactivate a layer
+                } else if ((match = command.match(/^\s*#(.*)/))) {
+                  commandFound = true;
+                  if (event.value === KeyChangeState.REPEAT) continue;
+                  const layerName = match[1].trim();
+                  layerState[layerName] = !!event.value && allModifiersPressed;
+                  compiledKeymap = compileKeymap(this.config, getActiveLayer());
+                }
+              }
+              break;
+            }
+          }
+          if (!commandFound) {
+            this.uinput.write(event);
+            this.uinput.sync();
+          }
+          skipNextSync = true;
+        } else {
+          console.log('skipNextSync:', skipNextSync);
+          console.log('type.name:', type.name);
+          if (type.name === 'EV_SYNC') {
+            if (!skipNextSync) this.uinput.write(event);
+          } else {
+            this.uinput.write(event);
+          }
+          skipNextSync = false;
         }
-        if (!commandFound) {
-          uinput.write(event);
-          uinput.sync();
+      });
+    }
+  }
+  async unbind() {
+    for (const device of this.loadedDevices) {
+      for (const [key, state] of Object.entries(keyStates)) {
+        if (state === true) {
+          const code = constants[key];
+          if (code) {
+            this.uinput.write({
+              type: constants.EV_KEY,
+              code: code,
+              value: KeyChangeState.RELEASE,
+            });
+            this.uinput.sync();
+          }
         }
       }
+      device.ungrab();
+      device.removeAllListeners();
+    }
+    this.loadedDevices = [];
+  }
+
+  listenConfigChange() {
+    console.log('Listening change for:', configFilePath);
+    fs.watch(configFilePath, () => {
+      console.log('Config changed, rebinding...');
+      this.unbind();
+      this.config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
+      console.log('config', this.config);
+      if (this.config) this.bind();
+
+      console.log('Rebinding done.');
     });
   }
+
+  /**
+   * Insure the config is properly defined.
+   */
+  validateConfig() {
+    throw new Error('Implement me.');
+  }
+}
+
+(async () => {
+  const remapper = new Remapper();
+  await remapper.start();
 })();

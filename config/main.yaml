@@ -136,11 +136,13 @@ layouts:
 
       - [['KEY_RIGHTSHIFT'], ["@O31"]]
       - [['KEY_END'], ["@O34"]]
+
   main:
     compile:
       - linux_event_map
       - fkeys
       - get_back_my_keys
+      - quotes
 
     keymap:
       # - [["@M1"], ["doubleswitch:edit_mode"]]
@@ -153,21 +155,27 @@ layouts:
       - [["@X2", "@R21"], ["togglePowermode[]"]]
       - [["@X2", "@R25"], ["KEY_CAPSLOCK"]]
 
-      - [["KEY_MENU"], ["ALTGR"]]
-
       - [["@O21"], ["KEY_RIGHTSHIFT"]]
 
       - [['@M1'], ["#numpad", "#edit_mode"]]
       - [['@M3'], ["#navigation_and_general_mode_right"]]
       - - - '@M4'
-        - - "@keyboard_language_layout"
-          - "@special_char"
+        - - "#keyboard_language_layout"
+          - "#special_char"
       - [['@M6'], ["#app"]]
 
-      # - [["@fn1", "KEY_EQUAL"], ['!reload-config']]
+      - [['@O11'], ["#some_keys"]]
+
   get_back_my_keys:
     keymap:
       - [["@M1", "@R31"], [">xdotool key Tab"]]
+
+  # Find a better placement for thoses keys.
+  some_keys:
+    keymap:
+      - [["@L22"], ['KEY_APOSTROPHE']]
+      - [["@L21"], ['KEY_LEFTBRACE']]
+
   fkeys:
     keymap:
       - [["@F1"], ['KEY_F1']]
@@ -184,6 +192,7 @@ layouts:
       - [['@F12'], ['KEY_F12']]
       - [['@F13'], ['KEY_INSERT']]
       - [['@F14'], ['KEY_DELETE']]
+
   edit_mode:
     keymap:
       - [["KEY_E"], [">xdotool key --delay 0 ctrl+c"]]
@@ -210,6 +219,9 @@ layouts:
       - [["@R32"], ["KEY_BACKSPACE"]]
       - [["@R33"], ["KEY_ENTER"]]
 
+      - [['@R34'], ["KEY_MINUS"]]
+      - [['@R35'], ["KEY_EQUAL"]]
+
   general:
     keymap:
       - [["KEY_F2"], ["> xdotool keydown alt; xdotool key Tab; sleep 0.1; xdotool keyup alt"]]
@@ -222,16 +234,16 @@ layouts:
       - [["@R22"], ["KEY_4"]]
       - [["@R23"], ["KEY_5"]]
       - [["@R24"], ["KEY_6"]]
-      - [["@R32"], ["KEY_7"]]
-      - [["@R33"], ["KEY_8"]]
-      - [["@R34"], ["KEY_9"]]
-      - [["@R35"], ["KEY_0"]]
+      - [["@R12"], ["KEY_7"]]
+      - [["@R13"], ["KEY_8"]]
+      - [["@R14"], ["KEY_9"]]
+      - [["@R25"], ["KEY_0"]]
 
   app:
     keymap:
-      - [["@L11"], [">su goaman -m -c 'google-chrome &'"]] #
-      - [["@L12"], [">su goaman -c 'firefox &'"]] #
-      - [["@L13"], [">su -m goaman -c 'code -n --disable-gpu /home/goaman &'"]] #
+      - [["@L11"], [">google-chrome"]] #
+      - [["@L12"], [">firefox"]] #
+      - [["@L13"], [">code -n --disable-gpu /home/goaman"]] #
 
       - [["@L21"], [">su goaman -m -c '/home/odoo/app/blender-2.80/  &'"]] #
       - [["@L23"], [">su goaman -m -c '/usr/bin/inkscape &'"]] #
@@ -271,9 +283,9 @@ layouts:
 
   quotes:
     keymap:
-      - [["@fn1", "KEY_N"], [">xdotool key quoteright"]]
-      - [["@fn1", "KEY_SLASH"], [">xdotool key quotedbl"]]
-      - [["@fn1", "KEY_H"], [">xdotool key asciitilde"]]
+      - [["@M1", "@R21"], [">xdotool key asciitilde"]]
+      - [["@M1", "@r31"], [">xdotool key quoteright"]]
+      #- [["@M1", "KEY_SLASH"], [">xdotool key quotedbl"]]
 
   char_key:
     keymap:
@@ -304,12 +316,23 @@ layouts:
   none:
     keymap: []
 
+  razer_mouse:
+    keymap: []
+
 keyboards:
+  - name: none
+    layout: main
 
   - name: Keychron Keychron K2
     layout: main
 
+  # - name: Razer Naga Pro
+  #   layout: razer_mouse
+
+
+  # - name: Razer Naga Pro Keyboard
+  #   layout: razer_mouse
+
   # - name: Razer Razer Blade Keyboard
   #   layout: main
-    # layout: none
 

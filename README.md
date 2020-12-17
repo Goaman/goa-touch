@@ -35,3 +35,40 @@ Does not support multiples mapping for the same virtual key.
 If you have bind KEY_1 and KEY_2 to a virtual key (e.g. "@VIRTUAL"), if you
 press KEY_1 and KEY_2, when you will release KEY_1 or KEY_2, @VIRTUAL will be
 released.
+
+## todo
+
+- think and complete layout
+  - how many layers ?
+  - which keys are modifiers ?
+
+  - rules to create new layers ?
+  - rules to always be able to switch between "mouse/keyboard" and only "keyboard"
+
+  - layer configuration vs modifier configuration
+- tests
+- performances
+- documentation
+
+
+- features
+  - service launch
+    - launch with systemd
+    - retriver the current user and group id
+    - retrive the screen
+
+  - context aware
+
+  - security
+    - config file should be protected, otherwise any key could be remaped to a
+      command that want to keylog
+    - set the user and group that should launch the command
+
+  - compatibility
+    - windows
+    - mac
+
+  - observe /dev/input
+  - ui
+    - show current layout
+    - show key modifiers
