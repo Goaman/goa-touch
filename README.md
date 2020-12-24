@@ -38,20 +38,36 @@ released.
 
 ## todo
 
+
 - think and complete layout
+  - rules to create new layers ?
   - how many layers ?
   - which keys are modifiers ?
-
-  - rules to create new layers ?
-  - rules to always be able to switch between "mouse/keyboard" and only "keyboard"
+  - how many modifiers or layout switchers?
 
   - layer configuration vs modifier configuration
-- tests
-- performances
-- documentation
 
+  - rules to always be able to switch between "mouse/keyboard" and only "keyboard"
+  - how can I access shortcuts allready made when the hand is on the mouse?
+    - a button on the mice set the R-set be le L-set
+    - an additionnal modifier make the R-set other keys
+
+- organise code and api
+- tests
+- close fd and memory
+- manage errors
+
+- documentation
+  - ref
+  - examples
+- performances
+
+- publish
+  - github
+  - find forum/reddit/...
 
 - features
+  - launch process as another process
   - service launch
     - launch with systemd
     - retriver the current user and group id
@@ -72,3 +88,5 @@ released.
   - ui
     - show current layout
     - show key modifiers
+
+  - save previously working config files

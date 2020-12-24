@@ -1,7 +1,7 @@
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
-import { constants, Device, eventTypes, UInput, NevEvent } from 'nevdev';
+import { eventCodes, EventConstants, eventMap, Device, UInput, EvdevEvent } from 'nevdev';
 import { exec } from 'child_process';
 
 const configFilePath = path.resolve(__dirname, '..', 'config', 'main.yaml');
@@ -9,6 +9,9 @@ const configFilePath = path.resolve(__dirname, '..', 'config', 'main.yaml');
 interface KeyboardConfig {
   name: string;
   layout: string;
+  include?: {
+    phys?: string;
+  };
 }
 
 type Keymap = [string[], string[]][];
@@ -52,7 +55,7 @@ function getLayout(config: Config, name: string): LayoutConfig | undefined {
 enum KeyChangeState {
   RELEASE = 0,
   PRESS = 1,
-  REPEAT = 2,
+  HOLD = 2,
 }
 
 const execUID = 1000;
@@ -66,8 +69,25 @@ const execGID = 1000;
 // }
 
 // fs.watch(
+type CompiledKeymap = Record<string, KeyDefinition>;
+type CompiledKeymaps = Record<number, CompiledKeymap>;
 
-function compileKeymap(config: Config, activeLayers: string[]): Record<string, KeyDefinition> {
+function compileKeymaps(
+  config: Config,
+  devices: Device[],
+  deviceIds: Map<Device, number>,
+  activeLayers: string[],
+): Record<number, CompiledKeymap> {
+  const keymaps: CompiledKeymaps = {};
+  for (const device of devices) {
+    const keyboardConfig = getKeyboard(config, device.name);
+    const deviceId = deviceIds.get(device);
+    keymaps[deviceId] = compileKeymap(config, [keyboardConfig.layout, ...activeLayers]);
+  }
+  return keymaps;
+}
+
+function compileKeymap(config: Config, activeLayers: string[]): CompiledKeymap {
   const compiledLayouts = new Set<string>();
   const layoutToCompile = [...activeLayers];
   const keysDefinitions: Record<string, KeyDefinition> = {};
@@ -138,24 +158,94 @@ class Remapper {
   uinput: UInput;
   loadedDevices: Device[] = [];
   allDevices: Device[];
+  devicesIds = new Map<Device, number>();
+  lastDeviceId = 0;
+  compiledKeymaps: Record<number, CompiledKeymap>;
+  timeout: NodeJS.Timeout;
 
   async start() {
-    this.config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
-    this.uinput = new UInput(defaultDeviceName);
-    await this.loadDevices();
-    await this.bind();
-    this.listenConfigChange();
+    try {
+      this.config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
+      this.uinput = new UInput(defaultDeviceName);
+      // this.supportKeyboards2();
+      await this.loadDevices();
+      await this.bind();
+      this.listenConfigChange();
+    } catch (e) {
+      await this.unbind();
+      console.error('error', e);
+    }
   }
+  supportKeyboards() {
+    this.uinput.enableEventType(eventCodes.EV_SYN);
+    this.uinput.enableEventCode(eventCodes.EV_SYN, eventCodes.SYN_REPORT);
+    this.uinput.enableEventType(eventCodes.EV_KEY);
+    for (const [constant, value] of Object.entries(eventCodes)) {
+      if (constant.startsWith('KEY_') || constant.startsWith('BTN_')) {
+        this.uinput.enableEventCode(eventCodes.EV_KEY, value as number);
+      }
+    }
+  }
+
+  supportKeyboards2(): void {
+    this.uinput.enableEventType(eventCodes.EV_KEY);
+    for (const [constant, value] of Object.entries(eventCodes)) {
+      if (constant.startsWith('KEY_') || constant.startsWith('BTN_')) {
+        this.uinput.enableEventCode(eventCodes.EV_KEY, value as number);
+      }
+    }
+  }
+  // supporMouses():   void {
+  //   // this.enableEventType(eventCodes.EV_FF);
+  //   this.uinput.enableEventType(eventCodes.EV_REL);
+  //   for (const [constant, value] of Object.entries(eventCodes)) {
+  //     if (constant.startsWith('REL_')) {
+  //       this.uinput.enableEventCode(eventCodes.EV_REL, value as number, addon.NULL);
+  //     }
+  //   }
+  //   this.uinput.enableEventType(eventCodes.EV_MSC);
+  //   this.uinput.enableEventCode(eventCodes.EV_MSC, eventCodes.MSC_SCAN, addon.NULL);
+  // }
   async getDevicesInConfig() {
     return this.allDevices.filter((d) => !!getKeyboard(this.config, d.name));
   }
   async loadDevices() {
     this.allDevices = await Device.all();
+    for (const device of this.allDevices) {
+      this.devicesIds.set(device, this.lastDeviceId++);
+    }
+    // for (const device of this.allDevices) {
+    //   // console.log('layout:', layout);
+    //   // console.log('keymap:', keymap);
+    //   if (!(device.name === 'Razer Razer Naga Pro')) continue;
+    //   console.log('--------------------');
+    //   console.log('name::', device.name);
+    //   console.log('phys::', device.phys);
+    //   console.log('id_product::', device.id_product);
+    //   console.log('id_vendor::', device.id_vendor);
+    //   console.log('id_bustype::', device.id_bustype);
+    //   console.log('id_version::', device.id_version);
+    //   console.log('driver_version::', device.driver_version);
+    // }
   }
   async bind() {
+    let compiledKeymaps: CompiledKeymaps = {};
+
+    const getActiveLayer = () => {
+      const activeLayers = Object.entries(layerState)
+        .map(([layerName, state]) => layerName && state && layerName)
+        .filter((layerName) => !!layerName);
+      return activeLayers;
+    };
+
     for (const device of this.allDevices) {
       const keyboardConfig = getKeyboard(this.config, device.name);
       if (!keyboardConfig) continue;
+      if (keyboardConfig.include?.phys) {
+        if (!device.phys.includes(keyboardConfig.include.phys)) {
+          continue;
+        }
+      }
 
       console.log('Remapping device:', device.name);
       console.log('Main layer:', keyboardConfig.layout);
@@ -167,20 +257,25 @@ class Remapper {
         );
       }
 
+      // If the program is called while grabbing the keyboard with a key being
+      // pressed, the key will not receive the signal that it as ben released
+      // because we grab the device. Wait 200ms to wait for the user to
+      // release the key.
+      await new Promise((resolve) => (this.timeout = setTimeout(resolve, 200)));
       device.listen();
       device.grab();
 
-      const getActiveLayer = () => {
-        const activeLayers = Object.entries(layerState)
-          .map(([layerName, state]) => layerName && state && layerName)
-          .filter((layerName) => !!layerName);
-        return [keyboardConfig.layout, ...activeLayers];
-      };
-      let compiledKeymap = compileKeymap(this.config, getActiveLayer());
       let skipNextSync = false;
+      const deviceId = this.devicesIds.get(device);
 
+      // device.onEvent((event) => {
+      //   this.uinput.write(event);
+      // });
       device.onEvent((event) => {
-        const type = eventTypes[event.type];
+        const type = eventMap[event.type];
+        if (!type) return;
+        // try to understand a bug where type is undefined.
+        if (!type) throw new Error('Event type ' + event.type + ' does not exists');
         const linuxKeyNames = type.events[event.code];
         if (type.name === 'EV_KEY') {
           const keyNames = new Set<string>();
@@ -190,9 +285,11 @@ class Remapper {
           const visitStack = [...linuxKeyNames];
           let currentKey: string;
           while ((currentKey = visitStack.shift())) {
+            console.log('currentKey:', currentKey);
             keyNames.add(currentKey);
             visitedKeys.add(currentKey);
-            const keyDefinition = compiledKeymap[currentKey];
+            const deviceCompiledKeymap = compiledKeymaps?.[deviceId];
+            const keyDefinition = deviceCompiledKeymap?.[currentKey];
             if (!keyDefinition) continue;
             for (const alias of keyDefinition.aliases) {
               if (!visitedKeys.has(alias)) {
@@ -206,24 +303,24 @@ class Remapper {
             keyStates[keyName] = !!event.value;
           }
 
-          if (event.value !== KeyChangeState.REPEAT) {
-            console.log('---');
-            for (const [key, state] of Object.entries(keyStates)) {
-              if (state) console.log(`key ${key}`, true);
-            }
-          }
+          // if (event.value !== KeyChangeState.REPEAT) {
+          //   console.log('---');
+          //   for (const [key, state] of Object.entries(keyStates)) {
+          //     if (state) console.log(`key ${key}`, true);
+          //   }
+          // }
 
           let commandFound = false;
           if (event.value === KeyChangeState.RELEASE) {
             const releaseCodes = remapToRelease[event.code];
             if (releaseCodes) {
               for (const code of releaseCodes) {
-                const nevEvent: NevEvent = {
-                  type: constants.EV_KEY,
+                const evdevEvent: EvdevEvent = {
+                  type: eventCodes.EV_KEY,
                   code: code,
                   value: KeyChangeState.RELEASE,
                 };
-                this.uinput.write(nevEvent);
+                this.uinput.write(evdevEvent);
                 this.uinput.sync();
               }
             }
@@ -234,7 +331,7 @@ class Remapper {
               const allModifiersPressed = keymap.modifiers.every((m) => keyStates[m]);
               for (const command of keymap.commands) {
                 // check if command is coniere as a key remapping
-                if (event.value !== KeyChangeState.REPEAT) {
+                if (event.value !== KeyChangeState.HOLD) {
                   console.log('command:', command);
                 }
                 let match: RegExpMatchArray;
@@ -243,10 +340,9 @@ class Remapper {
                   commandFound = true;
                   const key = command.trim();
                   // const keyName = eventTypes
-                  console.log('Remap key to ', key);
-                  const remappedCode = constants[command.trim().toUpperCase()];
-                  const nevEvent = {
-                    type: constants['EV_KEY'],
+                  const remappedCode = eventCodes[command.trim().toUpperCase() as EventConstants];
+                  const nevEvent: EvdevEvent = {
+                    type: eventCodes['EV_KEY'],
                     code: remappedCode,
                     value: !allModifiersPressed ? 0 : event.value,
                   };
@@ -254,11 +350,10 @@ class Remapper {
                   remapToRelease[event.code].add(remappedCode);
                   this.uinput.write(nevEvent);
                   this.uinput.sync();
-
                   // check if we want to run a shell command
                 } else if (
                   (match = command.match(/^\s*>(.*)/)) &&
-                  (event.value === KeyChangeState.PRESS || event.value === KeyChangeState.REPEAT) &&
+                  (event.value === KeyChangeState.PRESS || event.value === KeyChangeState.HOLD) &&
                   allModifiersPressed
                 ) {
                   commandFound = true;
@@ -268,41 +363,56 @@ class Remapper {
                   // check if we want to activate/deactivate a layer
                 } else if ((match = command.match(/^\s*#(.*)/))) {
                   commandFound = true;
-                  if (event.value === KeyChangeState.REPEAT) continue;
+                  if (event.value === KeyChangeState.HOLD) continue;
                   const layerName = match[1].trim();
                   layerState[layerName] = !!event.value && allModifiersPressed;
-                  compiledKeymap = compileKeymap(this.config, getActiveLayer());
+
+                  compiledKeymaps = compileKeymaps(
+                    this.config,
+                    this.loadedDevices,
+                    this.devicesIds,
+                    getActiveLayer(),
+                  );
                 }
               }
               break;
             }
           }
           if (!commandFound) {
+            console.log('should send event', event);
             this.uinput.write(event);
             this.uinput.sync();
           }
           skipNextSync = true;
         } else {
-          console.log('skipNextSync:', skipNextSync);
-          console.log('type.name:', type.name);
-          if (type.name === 'EV_SYNC') {
-            if (!skipNextSync) this.uinput.write(event);
-          } else {
-            this.uinput.write(event);
-          }
-          skipNextSync = false;
+          // console.log('skipNextSync:', skipNextSync);
+          // console.log('type.name:', type.name);
+          // // if (type.name === 'EV_SYNC') {
+          // // if (!skipNextSync) this.uinput.write(event);
+          // // } else {
+          // // this.uinput.write(event);
+          // // }
+          // skipNextSync = false;
         }
       });
     }
+
+    compiledKeymaps = compileKeymaps(
+      this.config,
+      this.loadedDevices,
+      this.devicesIds,
+      getActiveLayer(),
+    );
   }
   async unbind() {
+    clearTimeout(this.timeout);
     for (const device of this.loadedDevices) {
       for (const [key, state] of Object.entries(keyStates)) {
         if (state === true) {
-          const code = constants[key];
+          const code = eventCodes[key as EventConstants];
           if (code) {
             this.uinput.write({
-              type: constants.EV_KEY,
+              type: eventCodes.EV_KEY,
               code: code,
               value: KeyChangeState.RELEASE,
             });
