@@ -146,17 +146,16 @@ layouts:
       - [['@M1'], ["#edit_mode"]]
       # - [['@M1'], ["#numpad", "#edit_mode"]]
       - [["@M2"], ["KEY_LEFTSHIFT"]]
-      # - [['@M3'], ["#navigation_and_general_mode_right"]]
-      - - - '@M4'
-        - - "#keyboard_language_layout"
+      - [['@M3'], ["#app_util"]]
 
-      - [['@M6'], ["#app"]]
+      - [['@M7'], ["#app"]]
       - [['@M8'], ["KEY_RIGHTSHIFT"]]
       - [['@M9'], ["KEY_LEFTCTRL"]]
       - [['@M10'], ["#navigation_and_general_left"]]
       - [['@O01'], ["#numpad_left"]]
 
       - [['@O11'], ["#char_1"]]
+      - [['@O12'], ["#screen_and_keyboard_language_layout"]]
       - [['@O21'], ["#accents"]]
 
       - [["@M1", "@R31"], [">xdotool key Tab"]]
@@ -209,12 +208,12 @@ layouts:
     keymap:
       - [["@L13"], [">xdotool key --delay 0 ctrl+c"]]
       - [["@L14"], [">xdotool key --delay 0 ctrl+v"]]
-      - [["@L15"], [">xdotool key --delay 0 BackSpace"]]
+      # - [["@L15"], [">xdotool key --delay 0 BackSpace"]]
 
-      - [["@L22"], [">xdotool key --delay 0 ctrl+s"]]
-      - [["@L23"], [">xdotool key --delay 0 ctrl+z"]]
-      - [["@L24"], [">xdotool key --delay 0 ctrl+y"]]
-      - [["@L25"], [">xdotool key --delay 0 ctrl+g"]]
+      # - [["@L22"], [">xdotool key --delay 0 ctrl+s"]]
+      # - [["@L23"], [">xdotool key --delay 0 ctrl+z"]]
+      # - [["@L24"], [">xdotool key --delay 0 ctrl+y"]]
+      # - [["@L25"], [">xdotool key --delay 0 ctrl+g"]]
 
   char_1:
     keymap:
@@ -332,41 +331,60 @@ layouts:
     keymap:
       - [["@L11"], [">google-chrome"]] #
       - [["@L12"], [">firefox"]] #
-      - [["@L13"], [">code -n --disable-gpu /home/goaman"]] #
-      - [["@l15"], [">spotify"]] #
+      - [["@L13"], [">code -n --disable-gpu /home/goaman/Desktop"]] #
+      - [["@L15"], [">spotify"]] #
 
       - [["@l21"], [">obs"]] #
       - [["@L22"], [">inkscape"]] #
       - [["@L23"], [">blender"]] #
 
       - [["@L31"], [">discord"]] #
+      - [["@L33"], [">terminator"]] #
+
+
+  f_keys:
+    keymap:
+      - [["@L11"], ["KEY_F7"]]
+      - [["@L12"], ["KEY_F8"]]
+      - [["@L13"], ["KEY_F9"]]
+      - [["@L14"], ["KEY_F12"]]
+      - [["@L15"], ["KEY_F15"]]
+
+      - [["@L21"], ["KEY_F4"]]
+      - [["@L22"], ["KEY_F5"]]
+      - [["@L23"], ["KEY_F6"]]
+      - [["@L24"], ["KEY_F11"]]
+      - [["@L25"], ["KEY_F14"]]
+
+      - [["@L31"], ["KEY_F1"]]
+      - [["@L32"], ["KEY_F2"]]
+      - [["@L33"], ["KEY_F3"]]
+      - [["@L34"], ["KEY_F10"]]
+      - [["@L35"], ["KEY_F13"]]
 
   app_util:
     keymap:
-      - [["KEY_SYSRQ"], ['>gnome-screenshot -f ~/captures/$(date +%s).png']]
+      - [["@L11"], [">slock"]]
+      - [["@L12"], [">xkill"]]
 
-      - [["@O11"], [">gpick -p"]]
-      - [["@O12"], [">flameshot gui -p /home/goaman/captures"]]
+      - [["@L21"], ['>gnome-screenshot -f ~/captures/$(date +%s).png']]
+      - [["@L22"], [">gpick -p"]]
+      - [["@L23"], [">flameshot gui -p /home/goaman/captures"]]
+      - [["@L24"], [">/usr/bin/copyq toggle"]]
 
-      - [["@R11"], [">slock"]] #
-      - [["@R15"], [">xkill"]] #
+      - [["@L31"], [">fish -c 'btdisconnect'"]]
+      - [["@L32"], [">fish -c 'btbose'"]]
 
 
-      # need to be with a left modifier
-      - [["@L T"], [">/usr/bin/copyq toggle"]] #
-
-  screen:
+  screen_and_keyboard_language_layout:
     keymap:
-      - [['@R32'], [">/home/goaman/goamanc/bin/xrandoff"]]
-      - [['@R33'], [">/home/goaman/goamanc/bin/xrandon"]]
-      - [['@R34'], [">/home/goaman/goamanc/bin/xrand_screen2"]]
+      - [['@L11'], [">/home/goaman/goamanc/bin/xrandon first"]]
+      - [['@L12'], [">/home/goaman/goamanc/bin/xrandon second"]]
+      - [['@L13'], [">/home/goaman/goamanc/bin/xrandon both"]]
 
-  keyboard_language_layout:
-    keymap:
-      # - [["@R32"], ['>setxkbmap us dvorak-intl']]
-      - [["@R32"], ['>setxkbmap us dvorak']]
-      - [["@R33"], ['>setxkbmap us']]
-      - [["@R34"], ['>setxkbmap be']]
+      - [["@L31"], ['>setxkbmap us dvorak']]
+      - [["@L32"], ['>setxkbmap us']]
+      - [["@L33"], ['>setxkbmap be']]
 
   mouse:
     # scroll
@@ -381,9 +399,20 @@ layouts:
       - [["KEY_F1"], ['KEY_LEFTCTRL']]
       - [["KEY_F2"], ['KEY_RIGHTSHIFT']]
       - [["KEY_F3"], ['#navigation_and_general_left']]
+
       - [["KEY_F4"], ['#accents']]
       - [["KEY_F5"], ['#numpad_left']]
       - [["KEY_F6"], ['#char_1']]
+
+
+      - [['KEY_F7'], ["#f_keys"]]
+      - [['KEY_F8'], ["#app"]]
+      - [['KEY_F9'], ["#app_util"]]
+
+      - [['KEY_F10'], ["#screen_and_keyboard_language_layout"]]
+
+
+
 
       - [['KEY_F7'], ["#additional_keys"]]
       # - [["KEY_F8"], ['']]
@@ -395,6 +424,7 @@ layouts:
       # - [["KEY_F13"], ['']]
       # - [["KEY_F14"], ['#left_as_right']]
       - [["KEY_F15"], ['#left_as_right']]
+
   left_as_right:
     keymap:
       - [["@L11"], ['KEY_Y']]
@@ -444,6 +474,6 @@ keyboards:
   # - name: Razer Naga Pro Keyboard
   #   layout: razer_mouse
 
-  # - name: Razer Razer Blade Keyboard
-  #   layout: main
+  - name: Razer Razer Blade Keyboard
+    layout: main
 

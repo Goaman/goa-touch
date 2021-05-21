@@ -7,11 +7,27 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "Launch current Program",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}/build/main.js",
+      "runtimeExecutable": "/home/goaman/.nvm/versions/node/v15.3.0/bin/node",
+      "program": "${file}",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/**/*.js"
+      ],
+      // "outDir": "${workspaceFolder}/build",
+    }
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch test.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "/home/goaman/.nvm/versions/node/v15.3.0/bin/node",
+      "program": "/home/goaman/projects/self/programming/js_scripts/bin/test.js",
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/**/*.js"

@@ -36,9 +36,8 @@ If you have bind KEY_1 and KEY_2 to a virtual key (e.g. "@VIRTUAL"), if you
 press KEY_1 and KEY_2, when you will release KEY_1 or KEY_2, @VIRTUAL will be
 released.
 
+
 ## todo
-
-
 - think and complete layout
   - rules to create new layers ?
   - how many layers ?
@@ -90,3 +89,10 @@ released.
     - show key modifiers
 
   - save previously working config files
+
+- Make the software being reviewed by a professional
+
+## bugs
+- leaking when disconnecting a keyboard
+- repeating key
+- sometime I have to push a key twice
