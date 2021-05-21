@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@types/js-yaml": "^3.12.5",
+    "chokidar": "^3.4.3",
     "js-yaml": "^3.14.1",
     "nevdev": "file:../../nevdev"
   }
