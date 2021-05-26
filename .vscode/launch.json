@@ -18,7 +18,7 @@
         "${workspaceFolder}/**/*.js"
       ],
       // "outDir": "${workspaceFolder}/build",
-    }
+    },
     {
       "type": "node",
       "request": "launch",
