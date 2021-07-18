@@ -51,6 +51,10 @@ released.
     - a button on the mice set the R-set be le L-set
     - an additionnal modifier make the R-set other keys
 
+- bug: if sequence keydown on device1, keywodwn on device2, keyup on device 1,
+  keyup on device 2 then key1 is repeated indefinitely until a next key is
+  pushed on device1.
+
 - organise code and api
 - tests
 - close fd and memory
