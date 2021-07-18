@@ -1,6 +1,7 @@
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as chokidar from 'chokidar';
 import { eventCodes, EventConstants, eventMap, Device, UInput, EvdevEvent } from 'nevdev';
 import { spawn } from 'child_process';
 
@@ -141,6 +142,7 @@ function compileKeymap(config: Config, activeLayers: string[]): CompiledKeymap {
 }
 
 const keyStates: Record<string, boolean> = {};
+const keyDowns: Record<number, boolean> = {};
 const layerState: Record<string, boolean> = {};
 /**
  * A map of keycode that must be released when a particural code is pressed.
@@ -170,7 +172,8 @@ export class Remapper {
       // this.supportKeyboards2();
       await this.loadDevices();
       await this.bind();
-      // this.listenConfigChange();
+      this.listenConfigChange();
+      this.listenInputDirChanges();
     } catch (e) {
       await this.unbind();
       console.error('error', e);
@@ -247,8 +250,6 @@ export class Remapper {
         }
       }
 
-      console.log('Remapping device:', device.name);
-      console.log('Main layer:', keyboardConfig.layout);
       this.loadedDevices.push(device);
       const layout = getLayout(this.config, keyboardConfig.layout);
       if (!layout) {
@@ -302,6 +303,7 @@ export class Remapper {
           for (const keyName of keyNames) {
             keyStates[keyName] = !!event.value;
           }
+          keyDowns[event.code] = !!event.value;
 
           // if (event.value !== KeyChangeState.REPEAT) {
           //   console.log('---');
@@ -395,7 +397,6 @@ export class Remapper {
             }
           }
           if (!commandFound) {
-            console.log('should send event', event);
             this.uinput.write(event);
             this.uinput.sync();
           }
@@ -422,20 +423,24 @@ export class Remapper {
   }
   async unbind() {
     clearTimeout(this.timeout);
-    for (const device of this.loadedDevices) {
-      for (const [key, state] of Object.entries(keyStates)) {
-        if (state === true) {
-          const code = eventCodes[key as EventConstants];
-          if (code) {
-            this.uinput.write({
-              type: eventCodes.EV_KEY,
-              code: code,
-              value: KeyChangeState.RELEASE,
-            });
-            this.uinput.sync();
-          }
-        }
+    for (const [fromCode, remapedCodes] of Object.entries(remapToRelease)) {
+      this.uinput.write({
+        type: eventCodes.EV_KEY,
+        code: parseInt(fromCode),
+        value: KeyChangeState.RELEASE,
+      });
+      this.uinput.sync();
+      if (!remapedCodes) continue;
+      for (const code of remapedCodes) {
+        this.uinput.write({
+          type: eventCodes.EV_KEY,
+          code: code,
+          value: KeyChangeState.RELEASE,
+        });
+        this.uinput.sync();
       }
+    }
+    for (const device of this.loadedDevices) {
       device.ungrab();
       device.removeAllListeners();
     }
@@ -445,14 +450,29 @@ export class Remapper {
   listenConfigChange() {
     console.log('Listening change for:', configFilePath);
     fs.watch(configFilePath, () => {
-      console.log('Config changed, rebinding...');
+      console.log('Config changed,. rebinding...');
       this.unbind();
+
       this.config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
       console.log('config', this.config);
-      if (this.config) this.bind();
+      if (this.config) this.bid();
 
       console.log('Rebinding done.');
     });
+  }
+
+  listenInputDirChanges() {
+    const watcher = chokidar.watch('/dev/input/', {
+      ignoreInitial: true,
+    });
+
+    const reset = () => {
+      this.unbind();
+      this.loadDevices();
+      this.bind();
+    };
+
+    watcher.on('add', reset);
   }
 
   /**
