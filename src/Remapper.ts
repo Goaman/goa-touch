@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as chokidar from 'chokidar';
 import { eventCodes, EventConstants, eventMap, Device, UInput, EvdevEvent } from 'nevdev';
 import { spawn } from 'child_process';
+import { EventCodes } from 'nevdev/build-ts/js/eventMap';
 
 const configFilePath = path.resolve(__dirname, '..', 'config', 'main.yaml');
 
@@ -142,7 +143,6 @@ function compileKeymap(config: Config, activeLayers: string[]): CompiledKeymap {
 }
 
 const keyStates: Record<string, boolean> = {};
-const keyDowns: Record<number, boolean> = {};
 const layerState: Record<string, boolean> = {};
 /**
  * A map of keycode that must be released when a particural code is pressed.
@@ -152,6 +152,12 @@ const layerState: Record<string, boolean> = {};
  * required.
  */
 const remapToRelease: Record<number, Set<number>> = {};
+/**
+ * Whenever changing a configuration of layer a key was pushed, we need to
+ * release it even if we found a command to execute. Otherwise the key might
+ * never be released (which is wrong).
+ */
+const keyCodesToReleaseAnyway: Set<number> = new Set();
 
 const defaultDeviceName = 'GoaTouch virtual device';
 
@@ -275,8 +281,6 @@ export class Remapper {
       device.onEvent((event) => {
         const type = eventMap[event.type];
         if (!type) return;
-        // try to understand a bug where type is undefined.
-        if (!type) throw new Error('Event type ' + event.type + ' does not exists');
         const linuxKeyNames = type.events[event.code];
         if (type.name === 'EV_KEY') {
           const keyNames = new Set<string>();
@@ -285,6 +289,8 @@ export class Remapper {
           const visitedKeys = new Set<string>();
           const visitStack = [...linuxKeyNames];
           let currentKey: string;
+
+          // Get all the keymaps for the event, including aliases.
           while ((currentKey = visitStack.shift())) {
             // console.log('currentKey:', currentKey);
             keyNames.add(currentKey);
@@ -303,7 +309,6 @@ export class Remapper {
           for (const keyName of keyNames) {
             keyStates[keyName] = !!event.value;
           }
-          keyDowns[event.code] = !!event.value;
 
           // if (event.value !== KeyChangeState.REPEAT) {
           //   console.log('---');
@@ -314,6 +319,18 @@ export class Remapper {
 
           let commandFound = false;
           if (event.value === KeyChangeState.RELEASE) {
+            if (keyCodesToReleaseAnyway.has(event.code)) {
+              const evdevEvent: EvdevEvent = {
+                type: eventCodes.EV_KEY,
+                code: event.code,
+                value: KeyChangeState.RELEASE,
+              };
+              this.uinput.write(evdevEvent);
+              this.uinput.sync();
+              commandFound = true;
+              keyCodesToReleaseAnyway.delete(event.code);
+            }
+
             const releaseCodes = remapToRelease[event.code];
             if (releaseCodes) {
               for (const code of releaseCodes) {
@@ -378,12 +395,19 @@ export class Remapper {
                   });
                   process.unref();
 
-                  // check if we want to activate/deactivate a layer
+                  // check if we want to activate or deactivate a layer
                 } else if ((match = command.match(/^\s*#(.*)/))) {
                   commandFound = true;
                   if (event.value === KeyChangeState.HOLD) continue;
                   const layerName = match[1].trim();
                   layerState[layerName] = !!event.value && allModifiersPressed;
+
+                  for (const [keyName, isKeyDown] of Object.entries(keyStates)) {
+                    if (!keyName.startsWith('@') && isKeyDown) {
+                      const code = eventCodes[keyName as keyof EventCodes] as number;
+                      keyCodesToReleaseAnyway.add(code);
+                    }
+                  }
 
                   compiledKeymaps = compileKeymaps(
                     this.config,
@@ -397,6 +421,9 @@ export class Remapper {
             }
           }
           if (!commandFound) {
+            // if (event.value !== 2) {
+            //   console.log(`event:`, eventCodes.byTypes[event.type][event.code]);
+            // }
             this.uinput.write(event);
             this.uinput.sync();
           }
@@ -455,7 +482,7 @@ export class Remapper {
 
       this.config = yaml.safeLoad(fs.readFileSync(configFilePath, 'utf-8')) as Config;
       console.log('config', this.config);
-      if (this.config) this.bid();
+      if (this.config) this.bind();
 
       console.log('Rebinding done.');
     });
