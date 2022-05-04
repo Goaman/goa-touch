@@ -442,5 +442,5 @@ keyboards:
   #   layout: empty
   # - name: Razer Naga Pro Keyboard
   #   layout: razer_mouse
-  # - name: Razer Razer Blade Keyboard
-  #   layout: main
+  - name: Razer Razer Blade Keyboard
+    layout: main
