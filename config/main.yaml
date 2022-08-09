@@ -133,6 +133,22 @@ layouts:
 
       - [['KEY_RIGHTSHIFT'], ['@O31']]
       - [['KEY_END'], ['@O34']]
+  fkeys:
+    keymap:
+      - [['@F1'], ['KEY_F1']]
+      - [['@F2'], ['KEY_F2']]
+      - [['@F3'], ['KEY_F3']]
+      - [['@F4'], ['KEY_F4']]
+      - [['@F5'], ['KEY_F5']]
+      - [['@F6'], ['KEY_F6']]
+      - [['@F7'], ['KEY_F7']]
+      - [['@F8'], ['KEY_F8']]
+      - [['@F9'], ['KEY_F9']]
+      - [['@F9'], ['KEY_F9']]
+      - [['@F11'], ['KEY_F11']]
+      - [['@F12'], ['KEY_F12']]
+      - [['@F13'], ['KEY_INSERT']]
+      - [['@F14'], ['KEY_DELETE']]
 
   main:
     compile:
@@ -166,22 +182,28 @@ layouts:
 
       - [['@O11'], ['#additional_keys']]
 
-  fkeys:
+  razer_mouse:
     keymap:
-      - [['@F1'], ['KEY_F1']]
-      - [['@F2'], ['KEY_F2']]
-      - [['@F3'], ['KEY_F3']]
-      - [['@F4'], ['KEY_F4']]
-      - [['@F5'], ['KEY_F5']]
-      - [['@F6'], ['KEY_F6']]
-      - [['@F7'], ['KEY_F7']]
-      - [['@F8'], ['KEY_F8']]
-      - [['@F9'], ['KEY_F9']]
-      - [['@F9'], ['KEY_F9']]
-      - [['@F11'], ['KEY_F11']]
-      - [['@F12'], ['KEY_F12']]
-      - [['@F13'], ['KEY_INSERT']]
-      - [['@F14'], ['KEY_DELETE']]
+      - [['KEY_F1'], ['KEY_LEFTCTRL']]
+      - [['KEY_F2'], ['KEY_RIGHTSHIFT']]
+      - [['KEY_F3'], ['#navigation_and_general_left']]
+
+      - [['KEY_F4'], ['#accents']]
+      - [['KEY_F5'], ['#numpad_left']]
+      - [['KEY_F6'], ['#char_1']]
+
+      - [['KEY_F7'], ['#f_keys']]
+      - [['KEY_F8'], ['#app']]
+      - [['KEY_F9'], ['#app_util']]
+
+      - [['KEY_F10'], ['#screen_and_keyboard_language_layout']]
+
+      # - [['KEY_F7'], ["#additional_keys"]]
+      - [['KEY_F12'], ['BTN_RIGHT']]
+
+      # - [["KEY_F13"], ['']]
+      # - [["KEY_F14"], ['']]
+      - [['KEY_F15'], ['#left_as_right']]
 
   # Find a better placement for thoses keys.
   additional_keys:
@@ -373,29 +395,6 @@ layouts:
     # - quick
     # - midlle
     # - slow
-
-  razer_mouse:
-    keymap:
-      - [['KEY_F1'], ['KEY_LEFTCTRL']]
-      - [['KEY_F2'], ['KEY_RIGHTSHIFT']]
-      - [['KEY_F3'], ['#navigation_and_general_left']]
-
-      - [['KEY_F4'], ['#accents']]
-      - [['KEY_F5'], ['#numpad_left']]
-      - [['KEY_F6'], ['#char_1']]
-
-      - [['KEY_F7'], ['#f_keys']]
-      - [['KEY_F8'], ['#app']]
-      - [['KEY_F9'], ['#app_util']]
-
-      - [['KEY_F10'], ['#screen_and_keyboard_language_layout']]
-
-      # - [['KEY_F7'], ["#additional_keys"]]
-      - [['KEY_F12'], ['BTN_RIGHT']]
-
-      # - [["KEY_F13"], ['']]
-      # - [["KEY_F14"], ['']]
-      - [['KEY_F15'], ['#left_as_right']]
 
   left_as_right:
     keymap:
